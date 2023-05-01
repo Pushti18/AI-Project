@@ -1,73 +1,124 @@
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.feature_extraction.text import TfidfVectorizer
-from nltk.stem import PorterStemmer
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-from flask import Flask, render_template, request
-import csv
-import string
-import nltk
-nltk.download('punkt')
-nltk.download('stopwords')
+<!DOCTYPE html>
+<html>
 
-app = Flask(_name_)
+<head>
 
-codes = []  # Load the CSV file containing the codes
-with open('test_codechef_distinctcol.csv', 'r') as file:
-    reader = csv.reader(file)
-    for row in reader:
-        codes.append(row[0])
-
-stop_words = set(stopwords.words('english'))
-stemmer = PorterStemmer()
+	<title>Plagiarism Checker</title>
+	<meta http-equiv="Cache-control" content="no-cache, no-store, must-revalidate">
+	<meta http-equiv="Pragma" content="no-cache">
+	<meta http-equiv="Expires" content="0">
 
 
-def preprocess(code):
 
-    code = code.translate(str.maketrans('', '', string.punctuation))
+	<title>Plagiarism Checker</title>
+	<style>
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background-color: #f7f7f7;
+			line-height: 1.6;
+			color: #555;
+			margin: 0;
+		}
 
-    tokens = word_tokenize(code.lower())     # Tokenize the code
+		h1 {
+			text-align: center;
+			margin-top: 50px;
+			margin-bottom: 50px;
+			color: #444;
+			font-weight: 700;
+			font-size: 48px;
+			text-shadow: 0px 3px 3px rgba(0, 0, 0, 0.2);
+		}
 
-    filtered_tokens = [token for token in tokens if token not in stop_words]
+		#form-container {
+			margin: 0 auto;
+			max-width: 800px;
+			padding: 50px 30px;
+			background-color: #fff;
+			border-radius: 10px;
+			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+			transition: transform 0.2s ease-in-out;
+			overflow: hidden;
+		}
 
-    stemmed_tokens = [stemmer.stem(token) for token in filtered_tokens]
+		#form-container:hover {
+			transform: translateY(-5px);
+			box-shadow: 0 8px 10px rgba(0, 0, 0, 0.2);
+		}
 
-    preprocessed_code = ' '.join(stemmed_tokens)
-    return preprocessed_code
+		label {
+			display: block;
+			font-weight: bold;
+			margin-bottom: 10px;
+		}
 
+		textarea {
+			width: 100%;
+			height: 200px;
+			padding: 10px;
+			font-size: 16px;
+			border: 1px solid #ccc;
+			border-radius: 4px;
+			box-sizing: border-box;
+			margin-bottom: 20px;
+		}
 
-preprocessed_codes = [preprocess(code) for code in codes]
+		input[type="submit"] {
+			background-color: #008000;
+			color: #fff;
+			padding: 10px 20px;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+			transition: background-color 0.2s ease-in-out;
+		}
 
-# Calculate the TF-IDF vectors for the preprocessed codes
-vectorizer = TfidfVectorizer()
-tfidf_vectors = vectorizer.fit_transform(preprocessed_codes)
+		input[type="submit"]:hover {
+			background-color: #006400;
+		}
 
+		.result {
+			margin-top: 30px;
+			text-align: center;
+		}
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+		.error {
+			color: #ff5b5b;
+			font-weight: bold;
+			margin-top: 30px;
+			text-align: center;
+		}
 
+		.percentage {
+			font-weight: bold;
+			font-size: 24px;
+			color: #444;
+			margin-top: 30px;
+			text-align: center;
+			text-shadow: 0px 3px 3px rgba(0, 0, 0, 0.2);
+		}
+	</style>
+</head>
 
-@app.route('/check_plagiarism', methods=['POST'])
-def check_plagiarism():
-    user_code = request.form['user_code']
+<body>
+	<h1>Plagiarism Checker</h1>
+	<div id="form-container">
+		<form method="post" action="{{ url_for('check_plagiarism') }}">
+			<label for="user-code">Enter your code:</label>
+			<textarea id="user-code" name="user_code" placeholder="Enter your code here..."
+				required>{{ user_code }}</textarea>
+			<input type="submit" value="Check plagiarism">
+		</form>
+		{% if plagiarism_percentage is not none %}
+		<div class="result">
+			{% if error_message %}
+			<p class="error">{{ error_message }}</p>
+			{% else %}
+			<p class="percentage">Plagiarism Percentage: {{ plagiarism_percentage }}%</p>
+			{% endif %}
+		</div>
+		{% endif %}
+	</div>
+</body>
 
-    # Preprocess the user code and calculate its TF-IDF vector
-    preprocessed_user_code = preprocess(user_code)
-    user_tfidf_vector = vectorizer.transform([preprocessed_user_code])
-
-    # Calculate the cosine similarity between the user code and each of the 50 codes
-    similarities = cosine_similarity(user_tfidf_vector, tfidf_vectors)
-
-    for i, similarity in enumerate(similarities[0]):
-        if similarity > 0.8:
-            plagiarism_percentage = similarity*100
-            break
-    else:
-        plagiarism_percentage = None
-
-    return render_template('index.html', plagiarism_percentage=plagiarism_percentage)
-
-
-if _name_ == '_main_':
-    app.run(debug=True)
+</html>
